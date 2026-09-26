@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduGenie - AI Learning Assistant</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+  <header class="hero">
+    <div class="container">
+      <div class="brand">EduGenie</div>
+      <h1>Google Gemini Powered Learning Assistant</h1>
+      <p>Ask, understand, practice, summarize and plan your learning with AI.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="tabs" role="tablist" aria-label="EduGenie features">
+        <button class="tab active" data-task="qa">Q&A</button>
+        <button class="tab" data-task="explain">Explain</button>
+        <button class="tab" data-task="quiz">Quiz</button>
+        <button class="tab" data-task="summarize">Summary</button>
+        <button class="tab" data-task="learn">Learning Path</button>
+      </div>
+
+      <div id="qa-panel" class="panel active">
+        <label for="qa-input">Ask a question</label>
+        <textarea id="qa-input" placeholder="Example: Which is the largest ocean?"></textarea>
+        <button class="primary" onclick="runQA()">Get Answer</button>
+      </div>
+
+      <div id="explain-panel" class="panel">
+        <label for="explain-input">Topic to explain</label>
+        <textarea id="explain-input" placeholder="Example: Photosynthesis"></textarea>
+        <button class="primary" onclick="runExplain()">Explain Topic</button>
+      </div>
+
+      <div id="quiz-panel" class="panel">
+        <label for="quiz-input">Quiz topic</label>
+        <textarea id="quiz-input" placeholder="Example: Pythagoras theorem"></textarea>
+        <div class="inline-fields">
+          <div>
+            <label for="quiz-count">Questions</label>
+            <select id="quiz-count">
+              <option>3</option>
+              <option selected>5</option>
+              <option>7</option>
+              <option>10</option>
+            </select>
+          </div>
+        </div>
+        <button class="primary" onclick="runQuiz()">Generate Quiz</button>
+      </div>
+
+      <div id="summarize-panel" class="panel">
+        <label for="summary-input">Educational passage</label>
+        <textarea id="summary-input" class="large" placeholder="Paste a paragraph or lesson here..."></textarea>
+        <button class="primary" onclick="runSummary()">Summarize</button>
+      </div>
+
+      <div id="learn-panel" class="panel">
+        <label for="learn-topic">Topic</label>
+        <input id="learn-topic" placeholder="Example: SQL">
+        <label for="learn-level">Current level</label>
+        <select id="learn-level">
+          <option>Beginner</option>
+          <option>Intermediate</option>
+          <option>Advanced</option>
+        </select>
+        <label for="learn-goal">Learning goal</label>
+        <input id="learn-goal" value="Understand the topic well">
+        <button class="primary" onclick="runLearningPath()">Recommend Path</button>
+      </div>
+
+      <section id="status" class="status" hidden></section>
+      <section id="result" class="result" aria-live="polite"></section>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">EduGenie • FastAPI + Gemini + LaMini-Flan-T5</div>
+  </footer>
+
+  <script>
+    const tabs = document.querySelectorAll(".tab");
+    const panels = document.querySelectorAll(".panel");
+    const result = document.getElementById("result");
+    const statusBox = document.getElementById("status");
+
+    tabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        tabs.forEach(t => t.classList.remove("active"));
+        panels.forEach(p => p.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(`${tab.dataset.task}-panel`).classList.add("active");
+        result.innerHTML = "";
+        hideStatus();
+      });
+    });
+
+    function showStatus(message) {
+      statusBox.hidden = false;
+      statusBox.textContent = message;
+    }
+
+    function hideStatus() {
+      statusBox.hidden = true;
+      statusBox.textContent = "";
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    async function postJSON(url, payload) {
+      showStatus("EduGenie is thinking...");
+      result.innerHTML = "";
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Request failed.");
+      }
+
+      hideStatus();
+      return data;
+    }
+
+    function renderText(title, text) {
+      result.innerHTML = `
+        <h2>${escapeHtml(title)}</h2>
+        <div class="answer">${escapeHtml(text).replaceAll("\n", "<br>")}</div>
+      `;
+    }
+
+    async function runQA() {
+      try {
+        const question = document.getElementById("qa-input").value.trim();
+        if (!question) return alert("Please enter a question.");
+        const data = await postJSON("/qa", {question});
+        renderText("Answer", data.answer);
+      } catch (error) {
+        showStatus("Error");
+        result.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+      }
+    }
+
+    async function runExplain() {
+      try {
+        const topic = document.getElementById("explain-input").value.trim();
+        if (!topic) return alert("Please enter a topic.");
+        const data = await postJSON("/explain", {topic});
+        renderText("Explanation", data.explanation);
+      } catch (error) {
+        showStatus("Error");
+        result.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+      }
+    }
+
+    async function runQuiz() {
+      try {
+        const topic = document.getElementById("quiz-input").value.trim();
+        const numQuestions = Number(document.getElementById("quiz-count").value);
+
+        if (!topic) return alert("Please enter a quiz topic.");
+
+        const data = await postJSON("/quiz", {
+          topic,
+          num_questions: numQuestions
+        });
+
+        const questions = data.quiz.questions;
+        window.quizResults = {};
+
+        result.innerHTML = `
+          <h2>Quiz</h2>
+          ${questions.map((q, i) => `
+            <article class="quiz-card">
+              <h3>${i + 1}. ${escapeHtml(q.question)}</h3>
+              <div class="quiz-options">
+                ${q.options.map((option, index) => `
+                  <label class="quiz-option">
+                    <input
+                      type="checkbox"
+                      name="question-${i}"
+                      data-answer="${escapeHtml(option)}"
+                      data-correct="${escapeHtml(q.correct_answer)}"
+                      onchange="checkQuizAnswer(${i}, this)"
+                    >
+                    <span>${String.fromCharCode(65 + index)}. ${escapeHtml(option)}</span>
+                  </label>
+                `).join("")}
+              </div>
+              <div id="feedback-${i}" class="quiz-feedback"></div>
+              <div id="correct-${i}" class="correct-answer"></div>
+            </article>
+          `).join("")}
+          <button type="button" id="submit-quiz-btn" class="primary" onclick="submitQuiz()">
+            Submit Quiz
+          </button>
+        `;
+      } catch (error) {
+        showStatus("Error");
+        result.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+      }
+    }
+
+    function checkQuizAnswer(questionIndex, optionElement) {
+      const options = document.querySelectorAll(`input[name="question-${questionIndex}"]`);
+
+      // Only one checkbox can be selected per question
+      options.forEach(input => {
+        input.checked = false;
+        input.parentElement.classList.remove("correct", "wrong");
+      });
+      optionElement.checked = true;
+
+      const selectedAnswer = optionElement.dataset.answer;
+      const correctAnswer = optionElement.dataset.correct;
+      const label = optionElement.parentElement;
+      const feedback = document.getElementById(`feedback-${questionIndex}`);
+      const correctBox = document.getElementById(`correct-${questionIndex}`);
+      const isCorrect = selectedAnswer === correctAnswer;
+
+      window.quizResults[questionIndex] = isCorrect;
+
+      if (isCorrect) {
+        label.classList.add("correct");
+        feedback.textContent = "✓ Correct Answer";
+        feedback.style.color = "green";
+        correctBox.innerHTML = "";
+      } else {
+        label.classList.add("wrong");
+        feedback.textContent = "✗ Wrong Answer";
+        feedback.style.color = "red";
+        correctBox.innerHTML = `<strong>Correct Answer:</strong> ${escapeHtml(correctAnswer)}`;
+      }
+    }
+
+    function submitQuiz() {
+      const totalQuestions = document.querySelectorAll(".quiz-card").length;
+      const answered = Object.keys(window.quizResults || {}).length;
+
+      if (answered < totalQuestions) {
+        alert("Please answer all questions before submitting.");
+        return;
+      }
+
+      const score = Object.values(window.quizResults).filter(Boolean).length;
+
+      document.getElementById("submit-quiz-btn").disabled = true;
+      result.insertAdjacentHTML("beforeend", `
+        <div class="quiz-score">
+          <h2>Score: ${score} out of ${totalQuestions}</h2>
+        </div>
+      `);
+    }
+
+    async function runSummary() {
+      try {
+        const text = document.getElementById("summary-input").value.trim();
+        if (!text) return alert("Please paste some text.");
+        const data = await postJSON("/summarize", {text});
+        renderText("Summary", data.summary);
+      } catch (error) {
+        showStatus("Error");
+        result.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+      }
+    }
+
+    async function runLearningPath() {
+      try {
+        const topic = document.getElementById("learn-topic").value.trim();
+        const current_level = document.getElementById("learn-level").value;
+        const goal = document.getElementById("learn-goal").value.trim();
+
+        if (!topic) return alert("Please enter a topic.");
+
+        const data = await postJSON("/learn/recommendations", {
+          topic, current_level, goal
+        });
+
+        const path = data.recommendations;
+        result.innerHTML = `
+          <h2>Learning Path: ${escapeHtml(path.topic)}</h2>
+          <p><strong>Level:</strong> ${escapeHtml(path.current_level)}</p>
+          <p><strong>Goal:</strong> ${escapeHtml(path.goal)}</p>
+          <div class="timeline">
+            ${path.steps.map(step => `
+              <article class="step">
+                <div class="step-number">${escapeHtml(step.step)}</div>
+                <div>
+                  <h3>${escapeHtml(step.title)}</h3>
+                  <p>${escapeHtml(step.description)}</p>
+                  <p><strong>Practice:</strong> ${escapeHtml(step.practice_task)}</p>
+                </div>
+              </article>
+            `).join("")}
+          </div>
+        `;
+      } catch (error) {
+        showStatus("Error");
+        result.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+      }
+    }
+  </script>
+</body>
+</html>
