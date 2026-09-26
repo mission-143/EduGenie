@@ -1,4 +1,5 @@
 import json
+from functools import lru_cache
 from typing import Any, Type
 
 from config import get_settings
@@ -11,17 +12,27 @@ except ImportError:  # pragma: no cover
     types = None
 
 
+class AIServiceError(RuntimeError):
+    """Raised when an AI backend is misconfigured or fails to respond."""
+
+
+@lru_cache(maxsize=1)
 def _get_client():
     settings = get_settings()
     if not settings.gemini_api_key:
-        raise RuntimeError(
+        raise AIServiceError(
             "GEMINI_API_KEY is not configured. Add it to the .env file."
         )
     if genai is None:
-        raise RuntimeError(
+        raise AIServiceError(
             "google-genai is not installed. Run: pip install -r requirements.txt"
         )
-    return genai.Client(api_key=settings.gemini_api_key)
+    return genai.Client(
+        api_key=settings.gemini_api_key,
+        http_options=types.HttpOptions(
+            timeout=int(settings.gemini_timeout_seconds * 1000)
+        ),
+    )
 
 
 def gemini_text(prompt: str, system_instruction: str | None = None) -> str:
@@ -40,7 +51,7 @@ def gemini_text(prompt: str, system_instruction: str | None = None) -> str:
 
     text = getattr(response, "text", None)
     if not text:
-        raise RuntimeError("Gemini returned an empty response.")
+        raise AIServiceError("Gemini returned an empty response.")
     return text.strip()
 
 
@@ -67,7 +78,7 @@ def gemini_json(
 
     raw = getattr(response, "text", None)
     if not raw:
-        raise RuntimeError("Gemini returned an empty JSON response.")
+        raise AIServiceError("Gemini returned an empty JSON response.")
 
     try:
         return schema_model.model_validate_json(raw)

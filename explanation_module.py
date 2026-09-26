@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from ai_service import gemini_text
+from ai_service import AIServiceError, gemini_text
 from config import get_settings
 
 
@@ -63,7 +63,7 @@ def explain_topic(topic: str) -> str:
     except Exception as exc:
         if settings.explanation_fallback_to_gemini and settings.gemini_api_key:
             return _gemini_explanation(topic)
-        raise RuntimeError(
+        raise AIServiceError(
             "The local LaMini explanation model could not be loaded. "
             "Install the requirements and ensure you have internet access for "
             "the first model download, or set EXPLANATION_BACKEND=gemini. "

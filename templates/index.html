@@ -129,10 +129,13 @@
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.detail || "Request failed.");
+        const detail = Array.isArray(data.detail)
+          ? data.detail.map((item) => item.msg).join(" ")
+          : data.detail;
+        throw new Error(detail || "Request failed.");
       }
 
       hideStatus();

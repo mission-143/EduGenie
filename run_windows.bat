@@ -4,7 +4,7 @@ if not exist .venv (
 )
 call .venv\Scripts\activate.bat
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 if not exist .env copy .env.example .env
 echo.
 echo EduGenie is ready.

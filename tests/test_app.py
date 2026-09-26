@@ -20,3 +20,20 @@ def test_health():
 def test_validation():
     response = client.post("/qa", json={"question": ""})
     assert response.status_code == 422
+
+
+def test_security_headers():
+    response = client.get("/health")
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+
+
+def test_ai_failure_returns_json_error(monkeypatch):
+    from ai_service import AIServiceError
+
+    def fail(_question):
+        raise AIServiceError("GEMINI_API_KEY is not configured.")
+
+    monkeypatch.setattr(main, "answer_question", fail)
+    response = client.post("/qa", json={"question": "What is gravity?"})
+    assert response.status_code == 503
+    assert "GEMINI_API_KEY" not in response.json()["detail"]

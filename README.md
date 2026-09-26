@@ -22,6 +22,8 @@ EduGenie/
 ├── summary_module.py
 ├── learning_path.py
 ├── requirements.txt
+├── requirements-dev.txt
+├── Dockerfile
 ├── .env.example
 ├── .gitignore
 ├── README.md
@@ -147,6 +149,7 @@ Expected:
 With the virtual environment active:
 
 ```powershell
+pip install -r requirements-dev.txt
 pytest
 ```
 
@@ -164,11 +167,7 @@ The included tests do not call Gemini. They check the application shell, health 
 | POST | `/summarize` | Text summarization |
 | POST | `/learn/recommendations` | Learning path |
 
-FastAPI also provides interactive API documentation at:
-
-```text
-http://127.0.0.1:8000/docs
-```
+Interactive API documentation is available at `http://127.0.0.1:8000/docs` when `ENABLE_DOCS=true` (disabled by default).
 
 ## Explanation model note
 
@@ -211,7 +210,34 @@ or run commands through the VS Code terminal after selecting the Python interpre
 - Keep API keys only in `.env`.
 - `.env` is excluded by `.gitignore`.
 - Do not paste API keys into source code or commit them to GitHub.
-- For a public deployment, add authentication, rate limiting, logging controls and secret management.
+- AI errors are logged server-side; clients only receive a generic message, so keys and internal details are never leaked.
+- For a public deployment, put the app behind authentication and rate limiting (e.g. at the reverse proxy / API gateway), since every request spends Gemini quota.
+
+## Production deployment
+
+Build and run the container (CPU-only PyTorch):
+
+```bash
+docker build -t edugenie .
+docker run -d --name edugenie -p 8000:8000 --env-file .env \
+  -v edugenie-hf-cache:/app/.cache/huggingface edugenie
+```
+
+Inject secrets through your platform's secret manager rather than baking `.env` into the image (`.env` is excluded by `.dockerignore`). The volume keeps the downloaded LaMini model across restarts.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `GEMINI_API_KEY` | — | Required for Gemini features |
+| `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Gemini model name |
+| `GEMINI_TIMEOUT_SECONDS` | `60` | Per-request Gemini timeout |
+| `EXPLANATION_BACKEND` | `local` | `local` or `gemini` |
+| `CORS_ORIGINS` | empty | Comma-separated allowed origins; empty disables CORS |
+| `ENABLE_DOCS` | `false` | Expose `/docs`, `/redoc`, `/openapi.json` |
+| `LOG_LEVEL` | `INFO` | Logging level |
+| `PORT` | `8000` | Container listen port |
+| `WEB_CONCURRENCY` | `2` | Uvicorn worker processes (each loads its own local model) |
+
+Use `/health` for load balancer / orchestrator health checks. If memory is tight, set `EXPLANATION_BACKEND=gemini` to avoid loading the ~800M-parameter local model in every worker.
 
 ## Project flow
 

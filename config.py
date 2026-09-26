@@ -12,6 +12,7 @@ class Settings:
     )
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "").strip()
     gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite").strip()
+    gemini_timeout_seconds: float = float(os.getenv("GEMINI_TIMEOUT_SECONDS", "60"))
     explanation_backend: str = os.getenv(
         "EXPLANATION_BACKEND", "local"
     ).strip().lower()
@@ -23,7 +24,15 @@ class Settings:
         "LOCAL_MODEL_NAME", "MBZUAI/LaMini-Flan-T5-783M"
     ).strip()
     max_input_chars: int = int(os.getenv("MAX_INPUT_CHARS", "12000"))
-    cors_origins: str = os.getenv("CORS_ORIGINS", "*")
+    cors_origins: list[str] = [
+        origin.strip()
+        for origin in os.getenv("CORS_ORIGINS", "").split(",")
+        if origin.strip()
+    ]
+    enable_docs: bool = (
+        os.getenv("ENABLE_DOCS", "false").strip().lower() in {"1", "true", "yes", "y"}
+    )
+    log_level: str = os.getenv("LOG_LEVEL", "INFO").strip().upper()
 
 
 @lru_cache
