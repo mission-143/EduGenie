@@ -1,5 +1,5 @@
 from ai_service import gemini_text
-from config import get_settings
+from config import get_settings 
 
 
 def summarize_text(text: str) -> str:
