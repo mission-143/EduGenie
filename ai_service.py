@@ -2,7 +2,7 @@ import json
 from functools import lru_cache
 from typing import Any, Type
 
-from config import get_settings
+from config import get_settings 
 
 try:
     from google import genai
