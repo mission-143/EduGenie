@@ -2,7 +2,7 @@ from ai_service import gemini_json
 from schemas import LearningPathResponse
 
 
-def recommend_learning_path(
+def recommend_learning_path( 
     topic: str,
     current_level: str,
     goal: str,
