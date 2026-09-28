@@ -1,5 +1,5 @@
 from ai_service import gemini_json
-from schemas import QuizResponse
+from schemas import QuizResponse 
 
 
 def generate_quiz(topic: str, num_questions: int = 5) -> dict:
