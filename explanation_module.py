@@ -4,7 +4,7 @@ from ai_service import AIServiceError, gemini_text
 from config import get_settings
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=1) 
 def _load_local_pipeline():
     """
     Loads LaMini-Flan-T5 only when the Explain feature is first used.
