@@ -290,7 +290,7 @@
         const current_level = document.getElementById("learn-level").value;
         const goal = document.getElementById("learn-goal").value.trim();
 
-        if (!topic) return alert("Please enter a topic.");
+        if (!topic) return alert("Please enter  a topic.");
 
         const data = await postJSON("/learn/recommendations", {
           topic, current_level, goal
@@ -321,4 +321,4 @@
     }
   </script>
 </body>
-</html>
+</html> 
