@@ -39,7 +39,7 @@ EduGenie/
 
 The document specifies FastAPI, HTML/CSS, Gemini for Q&A/summarization/quizzes/learning paths, and LaMini-Flan-T5-783M for concept explanation. Those modules are implemented as separate Python files and exposed through `/qa`, `/explain`, `/quiz`, `/summarize`, and `/learn/recommendations`.
 
-The supplied document names Gemini 1.5 Pro. The code deliberately makes the Gemini model configurable through `GEMINI_MODEL` because Gemini model availability changes over time. The default is a current configurable model value rather than hard-coding the retired project-era model name.
+The supplied document names Gemini 1.5 Pro. The code deliberately makes the Gemini model configurable through `GEMINI_MODEL` because Gemini model availability changes  over time. The default is a current configurable model value rather than hard-coding the retired project-era model name.
 
 ## Requirements
 
