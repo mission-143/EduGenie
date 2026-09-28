@@ -5,7 +5,7 @@ EduGenie is a lightweight educational AI assistant based on the supplied project
 - Q&A
 - Beginner-friendly concept explanations
 - Multiple-choice quiz generation
-- Educational passage summarization
+- Educational passage summarization 
 - Personalized learning paths
 
 ## Architecture
